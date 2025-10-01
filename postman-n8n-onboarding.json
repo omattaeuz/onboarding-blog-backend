@@ -1,0 +1,91 @@
+{
+  "info": {
+    "name": "Onboarding CRUD - n8n API",
+    "_postman_id": "9c0b1f2a-0c0d-4b0c-8e5f-5f2f0a8d9e2a",
+    "description": "Coleção Postman para a API do n8n (posts).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Listar Posts (GET /posts)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/posts?page={{page}}&limit={{limit}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "posts"
+          ],
+          "query": [
+            {
+              "key": "page",
+              "value": "{{page}}"
+            },
+            {
+              "key": "limit",
+              "value": "{{limit}}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Criar Post (POST /posts)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"title\": \"Meu primeiro post\", \"content\": \"Hello, n8n!\"}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/posts",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "posts"
+          ]
+        }
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://primary-production-e91c.up.railway.app/webhook"
+    },
+    {
+      "key": "jwt",
+      "value": ""
+    },
+    {
+      "key": "page",
+      "value": "1"
+    },
+    {
+      "key": "limit",
+      "value": "10"
+    }
+  ]
+}

@@ -1,0 +1,162 @@
+openapi: 3.1.0
+info:
+  title: Onboarding CRUD - n8n API
+  version: "1.0.0"
+  description: |
+    API construída no n8n para o Blog CRUD. Rotas expostas via Webhook do n8n.
+servers:
+  - url: https://primary-production-e91c.up.railway.app/webhook
+    description: Produção (Railway)
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Post:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 42
+        title:
+          type: string
+          maxLength: 140
+          example: "Meu primeiro post"
+        content:
+          type: string
+          maxLength: 5000
+          example: "Conteúdo do post..."
+        user_id:
+          type: string
+          description: ID do usuário (claim `sub` do JWT)
+          example: "12dd37a1-cf71-4f93-8909-07926ed83be7"
+        created_at:
+          type: string
+          format: date-time
+          example: "2025-10-01T13:20:40.123Z"
+    PostList:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Post'
+        meta:
+          type: object
+          properties:
+            page:
+              type: integer
+              example: 1
+            limit:
+              type: integer
+              example: 10
+            total:
+              type: integer
+              example: 23
+            totalPages:
+              type: integer
+              example: 3
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+paths:
+  /posts:
+    options:
+      summary: Preflight CORS
+      responses:
+        "204":
+          description: No content (CORS preflight)
+          headers:
+            Access-Control-Allow-Origin:
+              schema: { type: string, example: "*" }
+            Access-Control-Allow-Methods:
+              schema: { type: string, example: "GET, POST, PATCH, DELETE, OPTIONS" }
+            Access-Control-Allow-Headers:
+              schema: { type: string, example: "Content-Type, Authorization, apikey" }
+            Access-Control-Max-Age:
+              schema: { type: string, example: "600" }
+            Vary:
+              schema: { type: string, example: "Origin" }
+    get:
+      summary: Listar posts do usuário autenticado
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, minimum: 1, default: 1 }
+          description: Página (padrão 1)
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 100, default: 10 }
+          description: Tamanho da página (1-100)
+      responses:
+        "200":
+          description: Lista paginada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostList'
+              examples:
+                sucesso:
+                  value:
+                    data:
+                      - id: 42
+                        title: "Meu primeiro post"
+                        content: "Conteúdo do post..."
+                        user_id: "12dd37a1-cf71-4f93-8909-07926ed83be7"
+                        created_at: "2025-10-01T13:20:40.123Z"
+                    meta: { page: 1, limit: 10, total: 1, totalPages: 1 }
+        "401":
+          description: Falha de autenticação (JWT inválido/expirado)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                expiro:
+                  value: { message: "JWT expirado" }
+    post:
+      summary: Criar novo post
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, content]
+              properties:
+                title: { type: string, maxLength: 140 }
+                content: { type: string, maxLength: 5000 }
+            examples:
+              exemplo:
+                value:
+                  title: "Meu primeiro post"
+                  content: "Hello, n8n!"
+      responses:
+        "201":
+          description: Post criado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Post'
+        "400":
+          description: Requisição inválida
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        "401":
+          description: Falha de autenticação (JWT inválido/ausente)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        "500":
+          description: Erro interno ao inserir
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
