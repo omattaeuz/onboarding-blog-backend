@@ -1,0 +1,302 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "OPTIONS",
+        "path": "posts",
+        "options": {}
+      },
+      "id": "15c02378-f92e-4dd4-a3bb-820cf09115db",
+      "name": "CORS /posts",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        256,
+        -48
+      ],
+      "webhookId": "ee906353-6d68-4d47-a233-2a3a1bfd6fad"
+    },
+    {
+      "parameters": {
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              { "name": "Access-Control-Allow-Origin", "value": "*" },
+              { "name": "Access-Control-Allow-Methods", "value": "GET, POST, PATCH, DELETE, OPTIONS" },
+              { "name": "Access-Control-Allow-Headers", "value": "Content-Type, Authorization, apikey" },
+              { "name": "Access-Control-Max-Age", "value": "600" },
+              { "name": "Vary", "value": "Origin" }
+            ]
+          },
+          "responseCode": 204
+        }
+      },
+      "id": "37287ed2-c641-46ca-b28e-4844d34d8bfd",
+      "name": "Responder CORS",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        480,
+        -48
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "posts",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "bc8da779-3354-4c0a-b371-c51c34735957",
+      "name": "C: Criar Post",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        0,
+        320
+      ],
+      "webhookId": "posts-create"
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            { "name": "jwt", "value": "={{ ($json.headers.authorization || '').replace('Bearer ', '') }}" },
+            { "name": "title", "value": "={{ ($json.body.title || '').toString() }}" },
+            { "name": "content", "value": "={{ ($json.body.content || '').toString() }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "3c8c51f2-68ce-44b0-b976-1ffb65367b4f",
+      "name": "Set (title/content/jwt)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [
+        256,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "function b64urlToB64(s){return s.replace(/-/g,'+').replace(/_/g,'/');}\nfunction addPadding(s){return s + '='.repeat((4 - (s.length % 4)) % 4);} \nconst token = ($json.jwt || '').trim();\nif(!token.includes('.')){ throw new Error('JWT ausente ou inválido (Authorization header)'); }\ntry{\n  const payloadB64url = token.split('.')[1];\n  const b64 = addPadding(b64urlToB64(payloadB64url));\n  const json = Buffer.from(b64,'base64').toString('utf8');\n  const payload = JSON.parse(json);\n  if(!payload.sub){ throw new Error('JWT sem claim sub'); }\n  if(payload.exp && (Date.now()/1000) > Number(payload.exp)){ throw new Error('JWT expirado'); }\n  // Normalização de campos\n  const title = String(($json.title||'').trim()).slice(0,140);\n  const content = String(($json.content||'').trim()).slice(0,5000);\n  return [{ title, content, user_id: payload.sub }];\n}catch(err){\n  throw new Error('Falha ao decodificar JWT: '+ err.message);\n}"
+      },
+      "id": "3336ab5a-0c8e-4e9a-b07f-f69fac0d064a",
+      "name": "Function: decode JWT → user_id",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        448,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "tableId": "posts",
+        "dataToSend": "autoMapInputData"
+      },
+      "id": "549a24a5-248d-49ab-9b22-720908b45881",
+      "name": "Supabase v1: Create row",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        656,
+        320
+      ],
+      "credentials": {
+        "supabaseApi": { "id": "taTaQtAqXRxCVSw3", "name": "Supabase account 3" }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {
+          "responseCode": 201,
+          "responseHeaders": {
+            "entries": [
+              { "name": "Access-Control-Allow-Origin", "value": "*" },
+              { "name": "Content-Type", "value": "application/json" }
+            ]
+          }
+        }
+      },
+      "id": "87aa4d58-8090-40d9-b77d-bc33a8e87bb8",
+      "name": "Responder 201",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        848,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              { "name": "Access-Control-Allow-Origin", "value": "*" },
+              { "name": "Content-Type", "value": "application/json" }
+            ]
+          },
+          "responseCode": 500
+        }
+      },
+      "id": "caa01c29-ee8c-429a-9786-834213abd1f2",
+      "name": "Responder Erro Insert",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        848,
+        416
+      ]
+    },
+    {
+      "parameters": {
+        "path": "posts",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "5eda29dd-f188-4f22-a458-71d29858833a",
+      "name": "R: Listar Posts",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        0,
+        768
+      ],
+      "webhookId": "posts-list"
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            { "name": "page", "value": "={{ Math.max(1, Number($json.query.page || 1)) }}" },
+            { "name": "limit", "value": "={{ Math.min(100, Math.max(1, Number($json.query.limit || 10))) }}" },
+            { "name": "jwt", "value": "={{ ($json.headers.authorization || '').replace('Bearer ', '') }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "911082c6-c9cd-4e5d-a2fd-d3960df22eb0",
+      "name": "Set (page/limit/jwt)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [
+        256,
+        768
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "function b64urlToB64(s){return s.replace(/-/g,'+').replace(/_/g,'/');}\nfunction addPadding(s){return s + '='.repeat((4 - (s.length % 4)) % 4);} \nconst token = ($json.jwt || '').trim();\nif(!token.includes('.')){ throw new Error('JWT ausente ou inválido (Authorization header)'); }\ntry{\n  const payloadB64url = token.split('.')[1];\n  const b64 = addPadding(b64urlToB64(payloadB64url));\n  const json = Buffer.from(b64,'base64').toString('utf8');\n  const payload = JSON.parse(json);\n  if(payload.exp && (Date.now()/1000) > Number(payload.exp)){ throw new Error('JWT expirado'); }\n  return [{ user_id: payload.sub, page: $json.page, limit: $json.limit }];\n}catch(err){\n  throw new Error('Falha ao decodificar JWT: '+ err.message);\n}"
+      },
+      "id": "9d25a0d1-58d5-4765-a0ea-7953fb55fe6a",
+      "name": "Function (GET): decode JWT → user_id",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        448,
+        768
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "posts",
+        "returnAll": true,
+        "filters": {
+          "conditions": [
+            { "keyName": "user_id", "condition": "eq", "keyValue": "={{ $json.user_id }}" }
+          ]
+        }
+      },
+      "id": "bf4afbad-87f9-40c1-b1e9-41d8e165a51a",
+      "name": "Supabase v1: GetAll (filtrado)",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        656,
+        768
+      ],
+      "credentials": {
+        "supabaseApi": { "id": "taTaQtAqXRxCVSw3", "name": "Supabase account 3" }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Itens vindos do Supabase\nconst items = $input.all();\n// Page/limit vindos do contexto do primeiro item (injetados antes do Supabase)\nconst page = Number(items[0]?.json?.page ?? 1);\nconst limit = Number(items[0]?.json?.limit ?? 10);\n\n// Ordena por created_at desc localmente (até mover para DB com limit/offset)\nconst rows = items.map(i => i.json).sort((a,b)=>{\n  const aa = new Date(a.created_at || 0).getTime();\n  const bb = new Date(b.created_at || 0).getTime();\n  return bb - aa;\n});\n\n// Paginação local (mantida porque o nó está com returnAll=true)\nconst start = (page - 1) * limit;\nconst slice = rows.slice(start, start + limit);\n\nreturn [{\n  json: {\n    data: slice,\n    meta: {\n      page,\n      limit,\n      total: rows.length,\n      totalPages: Math.max(1, Math.ceil(rows.length / Math.max(limit,1)))\n    }\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        864,
+        768
+      ],
+      "id": "32c38dc0-eb9c-48b7-bfd6-eb7ee90bf96d",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              { "name": "Access-Control-Allow-Origin", "value": "*" },
+              { "name": "Content-Type", "value": "application/json" }
+            ]
+          }
+        }
+      },
+      "id": "c3049928-61f9-443d-bbee-af06361f4c3f",
+      "name": "Responder Lista",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1056,
+        768
+      ]
+    },
+    {
+      "parameters": { "content": "## Cors", "height": 256, "width": 1136, "color": 6 },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [ 192, -128 ],
+      "typeVersion": 1,
+      "id": "cfa1b6bb-0776-49cf-a8e8-d83582138bb8",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": { "content": "## Criação de Posts (POST) /post", "height": 416, "width": 1136, "color": 7 },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [ 192, 176 ],
+      "typeVersion": 1,
+      "id": "fae80e3d-78d3-4406-aa85-b96b584b1af8",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": { "content": "## Listagem de Postagem (GET)", "height": 416, "width": 1136, "color": 6 },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [ 192, 640 ],
+      "typeVersion": 1,
+      "id": "442fa608-03d7-4a75-aae7-ade443a1f9c0",
+      "name": "Sticky Note2"
+    }
+  ],
+  "connections": {
+    "CORS /posts": { "main": [[{ "node": "Responder CORS", "type": "main", "index": 0 }]] },
+    "C: Criar Post": { "main": [[{ "node": "Set (title/content/jwt)", "type": "main", "index": 0 }]] },
+    "Set (title/content/jwt)": { "main": [[{ "node": "Function: decode JWT → user_id", "type": "main", "index": 0 }]] },
+    "Function: decode JWT → user_id": { "main": [[{ "node": "Supabase v1: Create row", "type": "main", "index": 0 }]] },
+    "Supabase v1: Create row": { "main": [[{ "node": "Responder 201", "type": "main", "index": 0 }]] },
+    "R: Listar Posts": { "main": [[{ "node": "Set (page/limit/jwt)", "type": "main", "index": 0 }]] },
+    "Set (page/limit/jwt)": { "main": [[{ "node": "Function (GET): decode JWT → user_id", "type": "main", "index": 0 }]] },
+    "Function (GET): decode JWT → user_id": { "main": [[{ "node": "Supabase v1: GetAll (filtrado)", "type": "main", "index": 0 }]] },
+    "Supabase v1: GetAll (filtrado)": { "main": [[{ "node": "Code in JavaScript", "type": "main", "index": 0 }]] },
+    "Code in JavaScript": { "main": [[{ "node": "Responder Lista", "type": "main", "index": 0 }]] }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "c4687355a393fbbd9d56cd9b8ad6798162eb002e410870976e3977cd363b694f"
+  }
+}
