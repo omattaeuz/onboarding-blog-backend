@@ -9,8 +9,8 @@
 
 <p><strong>Base URL (produção):</strong> <code>https://primary-production-e91c.up.railway.app/webhook</code></p>
 
-<p><strong>OpenAPI (YAML):</strong> <a href="docs/openapi-n8n-onboarding.yml" download>openapi-n8n-onboarding.yml</a> <br/>
-<strong>Coleção Postman:</strong> <a href="docs/postman-n8n-onboarding.json" download>postman-n8n-onboarding.json</a>
+<p><strong>OpenAPI (YAML):</strong> <a href="docs/openapi-n8n-onboarding.yml" target="_blank">openapi-n8n-onboarding.yml</a> <br/>
+<strong>Coleção Postman:</strong> <a href="docs/postman-n8n-onboarding.json" target="_blank">postman-n8n-onboarding.json</a>
 
 <p><em>O claim <code>sub</code> do JWT é usado como <code>user_id</code> nos registros.</em></p>
 
